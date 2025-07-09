@@ -11,51 +11,59 @@ import {
   Keyboard,
   Switch
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // ✅ Corrected import
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function App() {
   const [item, setItem] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [list, setList] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [store, setStore] = useState('');
 
-  const clearAll = () => {
-    setList([]);
-  };
-
+  const clearAll = () => setList([]);
+  const USER_INITIALS = 'YC'
   const addItem = () => {
-    if (item.trim() === '') return;
+    if (item.trim() === '' || quantity.trim() === '') return;
+    const qty = parseInt(quantity);
+    if (isNaN(qty) || qty <= 0) return;
+
     setList(prevList => [
       ...prevList,
       {
         id: Date.now().toString(),
         name: item.trim(),
-        date: new Date().toLocaleString(),
+        quantity: qty,
+        date: new Date().toLocaleDateString(),
+        initials: USER_INITIALS,
+        store: store.trim(),
         completed: false,
         favorite: false,
       }
     ]);
     setItem('');
+    setQuantity('1');
+    setStore('');
     Keyboard.dismiss();
-  };
-
-  const removeItem = (id) => {
-    setList(prevList => prevList.filter(i => i.id !== id));
   };
 
   const toggleComplete = (id) => {
     setList(prevList =>
-      prevList.map(item =>
-        item.id === id ? { ...item, completed: !item.completed } : item
+      prevList.map(i =>
+        i.id === id ? { ...i, completed: !i.completed } : i
       )
     );
   };
 
   const toggleFavorite = (id) => {
-    setList(prev =>
-      prev.map(i =>
+    setList(prevList =>
+      prevList.map(i =>
         i.id === id ? { ...i, favorite: !i.favorite } : i
       )
     );
+  };
+
+  const removeItem = (id) => {
+    setList(prevList => prevList.filter(i => i.id !== id));
   };
 
   const themeStyles = {
@@ -80,16 +88,16 @@ export default function App() {
               { color: darkMode ? '#fff' : '#000' },
             ]}
           >
-            {item.name} -
+            {item.name} x{item.quantity}
           </Text>
           <Text style={{ color: darkMode ? '#ccc' : '#666' }}>
-            {item.date}
+            {item.store} ‒ {item.date} - {item.initials}
           </Text>
         </View>
       </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => toggleFavorite(item.id)} style={{ marginRight: 10 }}>
           <Icon
             name={item.favorite ? 'star' : 'star-border'}
             size={20}
@@ -112,7 +120,44 @@ export default function App() {
         <Switch value={darkMode} onValueChange={setDarkMode} />
       </View>
 
-      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={{
+            flex: 2,
+            height: 40,
+            borderWidth: 1,
+            borderColor: themeStyles.borderColor,
+            paddingHorizontal: 10,
+            borderRadius: 6,
+            backgroundColor: themeStyles.inputBg,
+            color: themeStyles.textColor,
+            marginRight: 10,
+          }}
+          placeholder="Add an item"
+          placeholderTextColor={themeStyles.subTextColor}
+          value={item}
+          onChangeText={setItem}
+          onSubmitEditing={addItem}
+          returnKeyType="done"
+          autoFocus={true}
+        />
+        <TextInput
+          style={{
+            flex: 2,
+            height: 40,
+            borderWidth: 1,
+            borderColor: themeStyles.borderColor,
+            paddingHorizontal: 10,
+            borderRadius: 6,
+            backgroundColor: themeStyles.inputBg,
+            color: themeStyles.textColor,
+          }}
+          placeholder="Store name"
+          placeholderTextColor={themeStyles.subTextColor}
+          value={store}
+          onChangeText={setStore}
+          returnKeyType="done"
+        />
         <TextInput
           style={{
             flex: 1,
@@ -123,19 +168,21 @@ export default function App() {
             borderRadius: 6,
             backgroundColor: themeStyles.inputBg,
             color: themeStyles.textColor,
+            textAlign: 'center',
+            marginRight: 10,
           }}
-          placeholder="Add an item"
+          keyboardType="numeric"
+          placeholder="Qty"
           placeholderTextColor={themeStyles.subTextColor}
-          value={item}
-          onChangeText={setItem}
+          value={quantity}
+          onChangeText={setQuantity}
           onSubmitEditing={addItem}
           returnKeyType="done"
-          autoFocus={true}
         />
         <Button title="Add" onPress={addItem} />
       </View>
 
-      {/* ⭐ Favorite List */}
+      {/* ⭐ Favorites */}
       {list.some(i => i.favorite) && (
         <>
           <Text style={[styles.sectionHeader, { color: themeStyles.textColor }]}>
@@ -155,13 +202,12 @@ export default function App() {
         data={list.filter(i => !i.favorite)}
         keyExtractor={item => item.id}
         renderItem={renderListItem}
-        ListEmptyComponent={<Text style={styles.empty}>No items yet</Text>}
+        ListEmptyComponent={<Text style={[styles.empty, { color: themeStyles.subTextColor }]}>No items yet</Text>}
       />
 
       <View style={styles.clearAllContainer}>
         <Button title="Clear All" onPress={clearAll} color="#d9534f" />
       </View>
-
       <Text style={[styles.tip, { color: themeStyles.subTextColor }]}>
         Tip: Tap an item to mark complete. Tap 🗑 or ⭐ to remove/favorite.
       </Text>
@@ -185,7 +231,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginBottom: 10,
     alignItems: 'center',
-    gap: 10,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    alignItems: 'center',
   },
   listItem: {
     flexDirection: 'row',
